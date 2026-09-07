@@ -1,119 +1,707 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <title>Buscar jugador Free Fire (7XHUB)</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 1rem; max-width: 900px; margin: auto; }
-    label { display:block; margin-top:0.6rem; }
-    input { padding:0.4rem; width:100%; max-width:400px; }
-    button { margin-top:0.6rem; padding:0.5rem 1rem; }
-    .card { border:1px solid #ddd; padding:0.8rem; margin-top:1rem; border-radius:6px; background:#f9f9f9; }
-    pre { white-space: pre-wrap; word-break: break-word; background:#fff; padding:0.6rem; border-radius:4px; border:1px solid #eee; }
-    .error { color: #a00; }
-    .hint { color: #444; font-size:0.9rem; margin-top:0.6rem; }
-  </style>
-</head>
-<body>
-  <h1>Buscar jugador por UID (Free Fire — 7XHUB)</h1>
-
-  <label>UID (player id)
-    <input id="uid" placeholder="Ej: 1033857091" />
-  </label>
-
-  <label>Auth key (auth)
-    <input id="auth" placeholder="Tu auth key para 7xhub-api (deja vacío si la API no la requiere)" />
-  </label>
-
-  <label>Region (opcional)
-    <input id="region" placeholder="br, us, etc. (opcional)" />
-  </label>
-
-  <button id="btn">Buscar</button>
-
-  <div id="result"></div>
-
-  <p class="hint">
-    Nota: esta página hace una petición directa al endpoint documentado en el README del repo:
-    <code>https://7xhub-api.squareweb.app/api/ff/info-player?uid={uid}&auth={auth}</code>.
-    Si la API bloquea llamadas CORS o no quieres exponer la clave, usa un proxy (ver notas abajo).
-  </p>
-
-  <script>
-    const btn = document.getElementById('btn');
-    const resultEl = document.getElementById('result');
-
-    btn.addEventListener('click', async () => {
-      resultEl.innerHTML = '';
-      const uid = document.getElementById('uid').value.trim();
-      const auth = document.getElementById('auth').value.trim();
-      const region = document.getElementById('region').value.trim();
-
-      if (!uid) {
-        alert('Ingresa un UID');
-        return;
-      }
-
-      resultEl.innerHTML = '<div class="card">Buscando...</div>';
-
-      // Construye URL según documentación del repo
-      const base = 'https://7xhub-api.squareweb.app/api/ff/info-player';
-      const params = new URLSearchParams();
-      params.set('uid', uid);
-      if (auth) params.set('auth', auth);
-      if (region) params.set('region', region);
-
-      const url = `${base}?${params.toString()}`;
-
-      try {
-        const resp = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json'
-          },
-          // keep credentials default; auth is sent as query param per docs
-        });
-
-        if (!resp.ok) {
-          const text = await resp.text();
-          resultEl.innerHTML = `<div class="card error"><strong>Error ${resp.status}:</strong><pre>${text}</pre></div>`;
-          return;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7XHUB Free Fire API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        const data = await resp.json();
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-        // Intenta mostrar campos útiles si existen, sino muestra JSON completo
-        const id = (data.data && data.data.Identificacao && data.data.Identificacao.ID) || data.data?.player?.account_id || data.data?.player?.account_id || data.data?.ID || 'N/A';
-        const nickname = (data.data && data.data.Identificacao && data.data.Identificacao.Nickname) || data.data?.player?.nickname || data.player?.nickname || data.nickname || 'N/A';
-        const nivel = (data.data && data.data.Identificacao && data.data.Identificacao.Nivel) || data.data?.player?.level || data.level || 'N/A';
+        .container {
+            width: 100%;
+            max-width: 700px;
+        }
 
-        resultEl.innerHTML = `
-          <div class="card">
-            <div><strong>Nickname:</strong> ${escapeHtml(nickname)}</div>
-            <div><strong>UID / ID:</strong> ${escapeHtml(id)}</div>
-            <div><strong>Nivel:</strong> ${escapeHtml(nivel)}</div>
-            <details style="margin-top:0.6rem;">
-              <summary>Mostrar JSON completo</summary>
-              <pre>${escapeHtml(JSON.stringify(data, null, 2))}</pre>
-            </details>
-          </div>
-        `;
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
 
-      } catch (err) {
-        // Errores de CORS suelen llegar aquí como TypeError: Failed to fetch
-        resultEl.innerHTML = `<div class="card error"><strong>Error de petición:</strong> ${escapeHtml(err.message)}<br><br>
-          Si aparece \"Failed to fetch\" o un error CORS, la API probablemente no permite solicitudes directas desde el navegador.<br>
-          Solución recomendada: usar un proxy servidor que haga la petición y devuelva los datos.</div>`;
-      }
-    });
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
 
-    function escapeHtml(s) {
-      if (s === null || s === undefined) return '';
-      return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    }
-  </script>
+        .header p {
+            font-size: 0.95rem;
+            color: #a0a0a0;
+            font-weight: 400;
+        }
+
+        .auth-section {
+            background: #0f3460;
+            border: 2px solid #2d3561;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .auth-section h3 {
+            color: #ff6b35;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .auth-inputs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #2d3561;
+            background: #0f3460;
+            color: white;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #ff6b35;
+            background: #1a4d7a;
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        input::placeholder {
+            color: #6b7496;
+        }
+
+        button {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            padding: 12px !important;
+            font-size: 0.85rem !important;
+            background: #2d3561 !important;
+            color: #a0a0a0 !important;
+            border: 2px solid #2d3561 !important;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%) !important;
+            color: white !important;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .player-card {
+            background: #0f3460;
+            border: 2px solid #2d3561;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .player-card:hover {
+            border-color: #ff6b35;
+            box-shadow: 0 8px 24px rgba(255, 107, 53, 0.2);
+        }
+
+        .section-title {
+            color: #ff6b35;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            margin-top: 20px;
+            margin-bottom: 12px;
+            padding-top: 16px;
+            border-top: 1px solid #2d3561;
+            letter-spacing: 1px;
+        }
+
+        .section-title:first-child {
+            margin-top: 0;
+            border-top: none;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #1a2d4d;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: right;
+            max-width: 50%;
+            word-break: break-word;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .status-badge.active {
+            background: rgba(76, 175, 80, 0.15);
+            color: #4caf50;
+            border: 1px solid #4caf50;
+        }
+
+        .status-badge.banned {
+            background: rgba(244, 67, 54, 0.15);
+            color: #f44336;
+            border: 1px solid #f44336;
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.15);
+            border: 2px solid #f44336;
+            color: #ff9999;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            color: #a0a0a0;
+            padding: 40px;
+            display: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 36px;
+            height: 36px;
+            border: 3px solid #2d3561;
+            border-top-color: #ff6b35;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6b7496;
+            padding: 40px;
+            display: none;
+        }
+
+        .empty-state.show {
+            display: block;
+        }
+
+        .select-region {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .region-btn {
+            flex: 1;
+            padding: 10px !important;
+            font-size: 0.9rem !important;
+            background: #2d3561 !important;
+            color: #a0a0a0 !important;
+            border: 2px solid #2d3561 !important;
+        }
+
+        .region-btn.active {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%) !important;
+            color: white !important;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .tabs {
+                grid-template-columns: 1fr;
+            }
+
+            .search-box, .auth-inputs {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .player-card {
+                padding: 16px;
+            }
+
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
+            .info-value {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 7XHUB FF</h1>
+            <p>Free Fire Player Stats & Info</p>
+        </div>
+
+        <div class="auth-section">
+            <h3>⚙️ Configuración</h3>
+            <div class="auth-inputs">
+                <input type="text" id="authKey" placeholder="Auth Key (7XHUB)" value="default" />
+                <input type="text" id="region" placeholder="Región (BR, US, IND...)" value="br" maxlength="3" />
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('search')">Buscar</button>
+            <button class="tab-btn" onclick="switchTab('stats')">Estadísticas</button>
+            <button class="tab-btn" onclick="switchTab('ranking')">Rankings</button>
+        </div>
+
+        <!-- Tab: Buscar -->
+        <div id="search" class="tab-content active">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Nombre o UID del jugador..." />
+                <button onclick="searchPlayer()">Buscar</button>
+            </div>
+            <div class="search-box">
+                <input type="text" id="uidCheckBan" placeholder="UID para verificar ban..." />
+                <button onclick="checkBan()">Verificar Ban</button>
+            </div>
+        </div>
+
+        <!-- Tab: Estadísticas -->
+        <div id="stats" class="tab-content">
+            <div class="search-box">
+                <input type="text" id="uidStats" placeholder="UID del jugador..." />
+                <button onclick="getStats('cs')">Clash Squad</button>
+                <button onclick="getStats('br')">Battle Royale</button>
+            </div>
+        </div>
+
+        <!-- Tab: Rankings -->
+        <div id="ranking" class="tab-content">
+            <div class="select-region">
+                <button class="region-btn active" onclick="switchRegion('br', this)">BR</button>
+                <button class="region-btn" onclick="switchRegion('us', this)">US</button>
+                <button class="region-btn" onclick="switchRegion('ind', this)">India</button>
+                <button class="region-btn" onclick="switchRegion('global', this)">Global</button>
+            </div>
+            <div class="search-box">
+                <button onclick="getLeaderboard('points')" style="flex: 1;">Ranking Puntos</button>
+                <button onclick="getLeaderboard('pass')" style="flex: 1;">Ranking Pass</button>
+            </div>
+        </div>
+
+        <div class="error" id="error"></div>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 16px;">Cargando información...</p>
+        </div>
+        <div class="empty-state show" id="emptyState">
+            <p>🎮 Selecciona una opción para comenzar</p>
+        </div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://7xhub-api.squareweb.app/api/ff';
+        let selectedRegion = 'br';
+
+        function getParams() {
+            return {
+                auth: document.getElementById('authKey').value.trim() || 'default',
+                region: document.getElementById('region').value.trim().toLowerCase() || 'br'
+            };
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+            clearResults();
+        }
+
+        function switchRegion(region, btn) {
+            selectedRegion = region;
+            document.querySelectorAll('.region-btn').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('emptyState').classList.remove('show');
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = '❌ ' + message;
+            errorEl.classList.add('show');
+        }
+
+        function showResults(html) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('emptyState').classList.remove('show');
+            document.getElementById('results').innerHTML = html;
+        }
+
+        function clearResults() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('emptyState').classList.add('show');
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function searchPlayer() {
+            const input = document.getElementById('searchInput').value.trim();
+            if (!input) {
+                showError('Ingresa un nombre o UID');
+                return;
+            }
+
+            showLoading();
+            const params = getParams();
+            try {
+                const url = `${API_BASE}/search-nickname?nickname=${input}&region=${params.region}&auth=${params.auth}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.contas && data.contas.length > 0) {
+                    displaySearchResults(data.contas);
+                } else {
+                    showError('Jugador no encontrado');
+                }
+            } catch (err) {
+                showError('Error al buscar. Verifica tu conexión.');
+            }
+        }
+
+        function displaySearchResults(contas) {
+            let html = '';
+            contas.forEach(cuenta => {
+                html += `
+                    <div class="player-card">
+                        <div class="info-row">
+                            <span class="info-label">ID</span>
+                            <span class="info-value">${cuenta.id}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Nombre</span>
+                            <span class="info-value">${cuenta.nickname}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Nivel</span>
+                            <span class="info-value">${cuenta.nivel}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Experiencia</span>
+                            <span class="info-value">${cuenta.experiencia.toLocaleString()}</span>
+                        </div>
+                        ${cuenta.curtidas ? `<div class="info-row">
+                            <span class="info-label">Likes</span>
+                            <span class="info-value">❤️ ${cuenta.curtidas.toLocaleString()}</span>
+                        </div>` : ''}
+                        <div class="info-row">
+                            <span class="info-label">Región</span>
+                            <span class="info-value">${cuenta.regiao.toUpperCase()}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            showResults(html);
+        }
+
+        async function checkBan() {
+            const uid = document.getElementById('uidCheckBan').value.trim();
+            if (!uid) {
+                showError('Ingresa un UID válido');
+                return;
+            }
+
+            showLoading();
+            const params = getParams();
+            try {
+                const url = `${API_BASE}/check-ban?uid=${uid}&auth=${params.auth}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.account_status) {
+                    const restrictions = data.account_status.restrictions;
+                    const isBanned = restrictions.banned;
+                    
+                    let html = `
+                        <div class="player-card">
+                            <div class="info-row">
+                                <span class="info-label">ID</span>
+                                <span class="info-value">${data.account_status.account_id}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Nombre</span>
+                                <span class="info-value">${data.account_status.identity}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Nivel</span>
+                                <span class="info-value">${data.account_status.profile_data.current_level}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Estado</span>
+                                <span class="info-value">
+                                    <span class="status-badge ${isBanned ? 'banned' : 'active'}">
+                                        ${isBanned ? '🚫 BANEADO' : '✓ ACTIVO'}
+                                    </span>
+                                </span>
+                            </div>
+                    `;
+                    
+                    if (isBanned && restrictions.ban_duration_days > 0) {
+                        html += `
+                            <div class="info-row">
+                                <span class="info-label">Días de Ban</span>
+                                <span class="info-value">${restrictions.ban_duration_days}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    html += '</div>';
+                    showResults(html);
+                } else {
+                    showError('No se encontró información del jugador');
+                }
+            } catch (err) {
+                showError('Error al verificar ban');
+            }
+        }
+
+        async function getStats(type) {
+            const uid = document.getElementById('uidStats').value.trim();
+            if (!uid) {
+                showError('Ingresa un UID válido');
+                return;
+            }
+
+            showLoading();
+            const params = getParams();
+            const endpoint = type === 'cs' ? 'carreira-cs' : 'carreira-br';
+            
+            try {
+                const url = `${API_BASE}/${endpoint}?uid=${uid}&region=${params.region}&auth=${params.auth}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    displayStats(data, type);
+                } else {
+                    showError('No se encontraron estadísticas');
+                }
+            } catch (err) {
+                showError('Error al obtener estadísticas');
+            }
+        }
+
+        function displayStats(data, type) {
+            if (type === 'cs') {
+                displayCSStats(data.clash_squad_stats);
+            } else {
+                displayBRStats(data.battle_royale_stats);
+            }
+        }
+
+        function displayCSStats(stats) {
+            let html = `
+                <div class="player-card">
+                    <div class="section-title">TEMPORADA ACTUAL</div>
+                    ${formatStatsSection(stats.current_season)}
+                    
+                    <div class="section-title">CARRERA</div>
+                    ${formatStatsSection(stats.career)}
+                    
+                    <div class="section-title">RANQUEADO</div>
+                    ${formatStatsSection(stats.ranked)}
+                </div>
+            `;
+            showResults(html);
+        }
+
+        function displayBRStats(stats) {
+            let html = `
+                <div class="player-card">
+                    <div class="section-title">SOLO</div>
+                    ${formatStatsSection(stats.career.solo_stats.detailed_stats)}
+                    
+                    <div class="section-title">DÚO</div>
+                    ${formatStatsSection(stats.career.duo_stats.detailed_stats)}
+                    
+                    <div class="section-title">ESCUADRA</div>
+                    ${formatStatsSection(stats.career.squad_stats.detailed_stats)}
+                </div>
+            `;
+            showResults(html);
+        }
+
+        function formatStatsSection(stats) {
+            let html = '';
+            for (const [key, value] of Object.entries(stats)) {
+                if (value !== null && value !== undefined) {
+                    const label = key.replace(/_/g, ' ').toUpperCase();
+                    const displayValue = typeof value === 'number' && value > 100 ? 
+                        value.toLocaleString() : value;
+                    html += `
+                        <div class="info-row">
+                            <span class="info-label">${label}</span>
+                            <span class="info-value">${displayValue}</span>
+                        </div>
+                    `;
+                }
+            }
+            return html;
+        }
+
+        async function getLeaderboard(type) {
+            showLoading();
+            const params = getParams();
+            
+            try {
+                let url;
+                if (selectedRegion === 'global') {
+                    url = `${API_BASE}/rank-passe-global?auth=${params.auth}`;
+                } else {
+                    const endpoint = type === 'points' ? 'tabela-pontos' : 'rank-passe';
+                    url = `${API_BASE}/${endpoint}?region=${selectedRegion}&auth=${params.auth}`;
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.leaderboard) {
+                    displayLeaderboard(data.leaderboard);
+                } else {
+                    showError('No hay datos de ranking disponibles');
+                }
+            } catch (err) {
+                showError('Error al obtener ranking');
+            }
+        }
+
+        function displayLeaderboard(leaderboard) {
+            let html = '<div class="player-card">';
+            leaderboard.slice(0, 20).forEach(player => {
+                html += `
+                    <div class="info-row">
+                        <span class="info-label">#${player.position}</span>
+                        <span style="color: #ff6b35; font-weight: 600;">${player.nickname}</span>
+                        <span class="info-value">${(player.points || player.pass_level).toLocaleString()}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            showResults(html);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchPlayer();
+            });
+            document.getElementById('uidCheckBan').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') checkBan();
+            });
+            document.getElementById('uidStats').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') getStats('cs');
+            });
+        });
+    </script>
 </body>
 </html>
