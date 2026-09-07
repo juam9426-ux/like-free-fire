@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Buscar jugador Free Fire</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 1rem; }
+    .card { border: 1px solid #ddd; padding: 0.8rem; margin-top: 1rem; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Buscar jugador Free Fire</h1>
+  <input id="uid" placeholder="UID o nickname" />
+  <button id="btn">Buscar</button>
+
+  <div id="result"></div>
+
+  <script>
+    document.getElementById('btn').addEventListener('click', async () => {
+      const uid = document.getElementById('uid').value.trim();
+      if (!uid) return alert('Ingresa UID o nickname');
+
+      const resultEl = document.getElementById('result');
+      resultEl.textContent = 'Buscando...';
+
+      try {
+        const resp = await fetch(`/api/player?uid=${encodeURIComponent(uid)}`);
+        if (!resp.ok) {
+          const text = await resp.text();
+          resultEl.textContent = 'Error: ' + text;
+          return;
+        }
+        const data = await resp.json();
+
+        // Muestra algunos campos de ejemplo — ajústalo según la respuesta real de la API
+        resultEl.innerHTML = `
+          <div class="card">
+            <strong>Nickname:</strong> ${data.nickname || data.name || 'N/A'}<br>
+            <strong>UID:</strong> ${data.uid || data.id || 'N/A'}<br>
+            <strong>Nivel:</strong> ${data.level || 'N/A'}<br>
+            <strong>Rango:</strong> ${data.rank || 'N/A'}<br>
+            <pre style="white-space:pre-wrap;margin-top:1rem;">${JSON.stringify(data, null, 2)}</pre>
+          </div>
+        `;
+      } catch (err) {
+        resultEl.textContent = 'Error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
