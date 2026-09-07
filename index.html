@@ -1,51 +1,465 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <title>Buscar jugador Free Fire</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 1rem; }
-    .card { border: 1px solid #ddd; padding: 0.8rem; margin-top: 1rem; border-radius: 6px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Fire Player Checker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: #a0a0a0;
+            font-weight: 400;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #2d3561;
+            background: #0f3460;
+            color: white;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #ff6b35;
+            background: #1a4d7a;
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        input::placeholder {
+            color: #6b7496;
+        }
+
+        button {
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .player-card {
+            background: #0f3460;
+            border: 2px solid #2d3561;
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .player-card:hover {
+            border-color: #ff6b35;
+            box-shadow: 0 8px 24px rgba(255, 107, 53, 0.2);
+        }
+
+        .player-info {
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #2d3561;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #a0a0a0;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .ban-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .ban-status.active {
+            background: rgba(76, 175, 80, 0.15);
+            color: #4caf50;
+            border: 1px solid #4caf50;
+        }
+
+        .ban-status.banned {
+            background: rgba(244, 67, 54, 0.15);
+            color: #f44336;
+            border: 1px solid #f44336;
+        }
+
+        .status-icon {
+            font-size: 1.3rem;
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.15);
+            border: 2px solid #f44336;
+            color: #ff9999;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            color: #a0a0a0;
+            padding: 40px;
+            display: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #2d3561;
+            border-top-color: #ff6b35;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6b7496;
+            padding: 40px;
+            display: none;
+        }
+
+        .empty-state.show {
+            display: block;
+        }
+
+        .empty-state p {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: #2d3561;
+            color: #a0a0a0;
+            border: 2px solid #2d3561;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+            color: white;
+            border-color: #ff6b35;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .player-card {
+                padding: 20px;
+            }
+
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h1>Buscar jugador Free Fire</h1>
-  <input id="uid" placeholder="UID o nickname" />
-  <button id="btn">Buscar</button>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 Free Fire Check</h1>
+            <p>Verifica el estado de tus jugadores</p>
+        </div>
 
-  <div id="result"></div>
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('byuid')">Por UID</button>
+            <button class="tab-btn" onclick="switchTab('byname')">Por Nombre</button>
+        </div>
 
-  <script>
-    document.getElementById('btn').addEventListener('click', async () => {
-      const uid = document.getElementById('uid').value.trim();
-      if (!uid) return alert('Ingresa UID o nickname');
+        <!-- Tab: Por UID -->
+        <div id="byuid" class="tab-content active">
+            <div class="search-box">
+                <input type="text" id="uidInput" placeholder="Ingresa el UID del jugador..." />
+                <button onclick="searchByUID()">Buscar</button>
+            </div>
+        </div>
 
-      const resultEl = document.getElementById('result');
-      resultEl.textContent = 'Buscando...';
+        <!-- Tab: Por Nombre -->
+        <div id="byname" class="tab-content">
+            <div class="search-box">
+                <input type="text" id="nameInput" placeholder="Ingresa el nombre del jugador..." />
+                <button onclick="searchByName()">Buscar</button>
+            </div>
+        </div>
 
-      try {
-        const resp = await fetch(`/api/player?uid=${encodeURIComponent(uid)}`);
-        if (!resp.ok) {
-          const text = await resp.text();
-          resultEl.textContent = 'Error: ' + text;
-          return;
+        <div class="error" id="error"></div>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 16px; color: #a0a0a0;">Buscando información...</p>
+        </div>
+        <div class="empty-state show" id="emptyState">
+            <p>📱 Ingresa un UID o nombre para comenzar</p>
+        </div>
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://www.freefireapi.me/api';
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
+            clearResults();
         }
-        const data = await resp.json();
 
-        // Muestra algunos campos de ejemplo — ajústalo según la respuesta real de la API
-        resultEl.innerHTML = `
-          <div class="card">
-            <strong>Nickname:</strong> ${data.nickname || data.name || 'N/A'}<br>
-            <strong>UID:</strong> ${data.uid || data.id || 'N/A'}<br>
-            <strong>Nivel:</strong> ${data.level || 'N/A'}<br>
-            <strong>Rango:</strong> ${data.rank || 'N/A'}<br>
-            <pre style="white-space:pre-wrap;margin-top:1rem;">${JSON.stringify(data, null, 2)}</pre>
-          </div>
-        `;
-      } catch (err) {
-        resultEl.textContent = 'Error: ' + err.message;
-      }
-    });
-  </script>
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('emptyState').classList.remove('show');
+            document.getElementById('results').style.display = 'none';
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+            document.getElementById('results').style.display = 'none';
+        }
+
+        function showResults(html) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('emptyState').classList.remove('show');
+            document.getElementById('results').innerHTML = html;
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function clearResults() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('emptyState').classList.add('show');
+            document.getElementById('results').style.display = 'none';
+        }
+
+        async function searchByUID() {
+            const uid = document.getElementById('uidInput').value.trim();
+            if (!uid) {
+                showError('Por favor ingresa un UID válido');
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/ban?uid=${uid}`);
+                const data = await response.json();
+                displayResult(data, uid);
+            } catch (err) {
+                showError('Error al conectar con la API. Verifica tu conexión e intenta nuevamente.');
+            }
+        }
+
+        async function searchByName() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (!name) {
+                showError('Por favor ingresa un nombre válido');
+                return;
+            }
+
+            showLoading();
+            try {
+                // Primero buscamos el UID por nombre
+                const response = await fetch(`${API_BASE}/player?name=${name}`);
+                const data = await response.json();
+                
+                if (data && data.uid) {
+                    displayResult(data, data.uid);
+                } else {
+                    showError('No se encontró el jugador. Verifica el nombre e intenta nuevamente.');
+                }
+            } catch (err) {
+                showError('Error al conectar con la API. Verifica tu conexión e intenta nuevamente.');
+            }
+        }
+
+        function displayResult(data, uid) {
+            if (!data) {
+                showError('No se pudo obtener la información del jugador.');
+                return;
+            }
+
+            const isBanned = data.ban_status === 'banned' || data.banned === true;
+            const banStatusClass = isBanned ? 'banned' : 'active';
+            const banStatusText = isBanned ? '🚫 BANEADO' : '✓ ACTIVO';
+
+            const html = `
+                <div class="player-card">
+                    <div class="player-info">
+                        <div class="info-row">
+                            <span class="info-label">UID</span>
+                            <span class="info-value">${data.uid || uid}</span>
+                        </div>
+                        ${data.name ? `
+                        <div class="info-row">
+                            <span class="info-label">Nombre</span>
+                            <span class="info-value">${data.name}</span>
+                        </div>
+                        ` : ''}
+                        ${data.level ? `
+                        <div class="info-row">
+                            <span class="info-label">Nivel</span>
+                            <span class="info-value">${data.level}</span>
+                        </div>
+                        ` : ''}
+                        ${data.exp ? `
+                        <div class="info-row">
+                            <span class="info-label">Experiencia</span>
+                            <span class="info-value">${data.exp.toLocaleString()}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="ban-status ${banStatusClass}">
+                        <span class="status-icon">${banStatusText.split(' ')[0]}</span>
+                        <span>${banStatusText}</span>
+                    </div>
+                </div>
+            `;
+
+            showResults(html);
+        }
+
+        // Permite buscar con Enter
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('uidInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') searchByUID();
+            });
+            document.getElementById('nameInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') searchByName();
+            });
+        });
+    </script>
 </body>
 </html>
