@@ -252,6 +252,29 @@
             border-color: #ff6b35;
         }
 
+        .sub-tab-btn {
+            flex: 1;
+            padding: 10px;
+            background: #2d3561;
+            color: #a0a0a0;
+            border: 2px solid #2d3561;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sub-tab-btn:hover {
+            border-color: #ff6b35;
+        }
+
+        .sub-tab-btn.active {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+            color: white;
+            border-color: #ff6b35;
+        }
+
         .tab-content {
             display: none;
         }
@@ -293,23 +316,44 @@
         </div>
 
         <div class="tab-buttons">
-            <button class="tab-btn active" onclick="switchTab('byuid')">Por UID</button>
-            <button class="tab-btn" onclick="switchTab('byname')">Por Nombre</button>
+            <button class="tab-btn active" onclick="switchTab('search')">Buscar</button>
+            <button class="tab-btn" onclick="switchTab('info')">Información</button>
+            <button class="tab-btn" onclick="switchTab('like')">Dar Like</button>
         </div>
 
-        <!-- Tab: Por UID -->
-        <div id="byuid" class="tab-content active">
-            <div class="search-box">
+        <!-- Tab: Buscar -->
+        <div id="search" class="tab-content active">
+            <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <button class="sub-tab-btn active" onclick="switchSearchMode('uid')">Por UID</button>
+                <button class="sub-tab-btn" onclick="switchSearchMode('name')">Por Nombre</button>
+            </div>
+            <div class="search-box" id="searchByUID">
                 <input type="text" id="uidInput" placeholder="Ingresa el UID del jugador..." />
                 <button onclick="searchByUID()">Buscar</button>
             </div>
-        </div>
-
-        <!-- Tab: Por Nombre -->
-        <div id="byname" class="tab-content">
-            <div class="search-box">
+            <div class="search-box" id="searchByName" style="display: none;">
                 <input type="text" id="nameInput" placeholder="Ingresa el nombre del jugador..." />
                 <button onclick="searchByName()">Buscar</button>
+            </div>
+            <div class="search-box" id="getNameById" style="display: none;">
+                <input type="text" id="idInput" placeholder="Ingresa el ID del jugador..." />
+                <button onclick="getNameById()">Obtener Nombre</button>
+            </div>
+        </div>
+
+        <!-- Tab: Información Detallada -->
+        <div id="info" class="tab-content">
+            <div class="search-box">
+                <input type="text" id="uidInfoInput" placeholder="Ingresa el UID del jugador..." />
+                <button onclick="getDetailedInfo()">Obtener Información</button>
+            </div>
+        </div>
+
+        <!-- Tab: Dar Like -->
+        <div id="like" class="tab-content">
+            <div class="search-box">
+                <input type="text" id="targetInput" placeholder="Ingresa el nombre del jugador (player123)..." />
+                <button onclick="giveLike()">Dar Like</button>
             </div>
         </div>
 
@@ -325,13 +369,29 @@
     </div>
 
     <script>
-        const API_BASE = 'https://www.freefireapi.me/api';
+        const API_BASE = 'https://www.freefireapi.me';
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tab).classList.add('active');
             document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
+            clearResults();
+        }
+
+        function switchSearchMode(mode) {
+            document.querySelectorAll('[id^="searchBy"], [id^="getName"]').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.sub-tab-btn').forEach(el => el.classList.remove('active'));
+            
+            if (mode === 'uid') {
+                document.getElementById('searchByUID').style.display = 'flex';
+            } else if (mode === 'name') {
+                document.getElementById('searchByName').style.display = 'flex';
+            } else if (mode === 'id') {
+                document.getElementById('getNameById').style.display = 'flex';
+            }
+            
+            event.target.classList.add('active');
             clearResults();
         }
 
